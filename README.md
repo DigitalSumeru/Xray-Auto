@@ -44,30 +44,33 @@
 wget -N [https://raw.githubusercontent.com/accforeve/Xray-Auto/main/install.sh](https://raw.githubusercontent.com/accforeve/Xray-Auto/main/install.sh) && bash install.sh
 
 ## 🎮 常用指令 | Commands
-
 脚本安装完成后，提供了一些快捷指令用于日常管理：
 
 ### 🔄 流量模式切换 (Mode Switch)
 控制是否允许流量访问中国大陆 IP（防误连回国，或按需开启）。
-
-```bash
 # 查看当前模式状态
+```bash
 mode
 
 # 切换模式 [阻断回国] <-> [允许回国]
+```bash
 mode c
 
 # 🗑️ 卸载脚本 (Uninstall)
 彻底清除 Xray 服务、配置文件、计划任务及相关防火墙规则。
+```bash
 xray-uninstall
 
 # 查看 Xray 运行状态
+```bash
 systemctl status xray
 
 # 重启 Xray 服务
+```bash
 systemctl restart xray
 
 # 查看实时日志
+```bash
 journalctl -u xray -f
 
 ## 📝 配置说明 | Configuration Details
@@ -83,5 +86,4 @@ journalctl -u xray -f
 * 请勿用于任何违反当地法律法规的用途。
 * 使用本脚本产生的任何后果由用户自行承担。
 
----
 Project maintained by [accforeve](https://github.com/accforeve)
