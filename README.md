@@ -1,5 +1,4 @@
-
-# Xray Auto Installer
+## Xray Auto Installer
 
 > 🚀 **VLESS + Reality + Vision + Intelligent SNI + System Optimization** > 一个轻量级、自动化、高稳定性的 Xray 部署脚本。
 
@@ -37,13 +36,15 @@
 ## 🚀 快速开始 | Quick Start
 
 使用 `root` 用户登录服务器，执行以下命令即可开始安装：
+
 ```bash
 wget -N [https://raw.githubusercontent.com/accforeve/Xray-Auto/main/install.sh](https://raw.githubusercontent.com/accforeve/Xray-Auto/main/install.sh) && bash install.sh
 ```
-## 🎮 常用指令 | Commands
+
+# 🎮 常用指令 | Commands
 脚本安装完成后，提供了一些快捷指令用于日常管理：
 
-### 🔄 流量模式切换 (Mode Switch)
+# 🔄 流量模式切换 (Mode Switch)
 控制是否允许流量访问中国大陆 IP（防误连回国，或按需开启）。
 # 查看当前模式状态
 `mode`
