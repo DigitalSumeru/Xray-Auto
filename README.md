@@ -8,7 +8,7 @@
 
 ## 📖 简介 | Introduction
 
-本项目是一个专为 **Debian / Ubuntu** 系统设计的 Xray 自动化安装脚本。它采用目前最先进的 **VLESS + Reality + Vision** 协议组合，并集成了多项系统级优化和安全防护功能。
+本项目是一个专为 **Debian** 系统设计的 Xray 自动化安装脚本。它采用目前最先进的 **VLESS + Reality + Vision** 协议组合，并集成了多项系统级优化和安全防护功能。
 
 ## ✨ 功能特性 | Features
 
