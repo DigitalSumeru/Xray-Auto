@@ -1,4 +1,4 @@
-# 🚀 Xray Auto Deployment Script (VLESS-Reality-Vision)
+# 🚀 Xray Auto Deployment Script (VLESS-Reality-Vision/xhttp)
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![System](https://img.shields.io/badge/System-Debian%20%7C%20Ubuntu-orange)](https://github.com/accforeve/Xray-Auto)
