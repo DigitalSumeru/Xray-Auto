@@ -1,7 +1,7 @@
 #!/bin/bash
 # ==============================================================
 # Project: Xray Auto Installer
-# Author: accforeve
+# Author: realfanzhongyan
 # Repository: https://github.com/realfanzhongyan/Xray-Auto
 # Version: v0.2 VLESS+reality-Vision/xhttp
 # ==============================================================
