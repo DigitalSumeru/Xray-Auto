@@ -13,7 +13,7 @@ if [ ! -f /etc/debian_version ]; then
 fi
 
 if [[ $EUID -ne 0 ]]; then
-    echo "Error: This script must be run as root!"
+    echo "\033[31mError: This script must be run as root!\033[0m"
     exit 1
 fi
 
