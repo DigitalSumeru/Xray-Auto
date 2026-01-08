@@ -3,7 +3,7 @@
 # Project: Xray-Auto Installer
 # Author: ISFZY
 # Repository: https://github.com/ISFZY/Xray-Auto
-# Version: v0.3.1
+# Version: v0.4
 # ==============================================================
 
 # --- UI 样式定义 ---
