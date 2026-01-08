@@ -84,7 +84,7 @@ SSH_PROC=$(ss -tlnp | grep sshd | grep LISTEN | head -n 1 | awk '{print $4}' | s
 DEF_SSH=${SSH_PROC:-${SSH_CONF:-22}}
 
 echo -e "\n${YELLOW}[1/3] SSH 管理端口${PLAIN}"
-if wait_with_countdown 5 "确认 SSH 端口 [${DEF_SSH}]"; then
+if wait_with_countdown 10 "确认 SSH 端口 [${DEF_SSH}]"; then
     SSH_PORT=$DEF_SSH
 else
     read -p "   ✏️  请输入新的 SSH 端口: " U_SSH
@@ -97,7 +97,7 @@ DEF_V=443
 echo -e "\n${YELLOW}[2/3] Vision 节点端口 (TCP)${PLAIN}"
 ss -tuln | grep -q ":${DEF_V} " && echo -e "   当前状态: ${BG_RED} 被占用 ${PLAIN}" || echo -e "   当前状态: ${GREEN} 空闲 ${PLAIN}"
 
-if wait_with_countdown 5 "确认 Vision 端口 [${DEF_V}]"; then
+if wait_with_countdown 10 "确认 Vision 端口 [${DEF_V}]"; then
     PORT_VISION=$DEF_V
 else
     read -p "   ✏️  请输入 Vision 端口: " U_V
@@ -110,7 +110,7 @@ DEF_X=8443
 echo -e "\n${YELLOW}[3/3] xhttp 节点端口${PLAIN}"
 ss -tuln | grep -q ":${DEF_X} " && echo -e "   当前状态: ${BG_RED} 被占用 ${PLAIN}" || echo -e "   当前状态: ${GREEN} 空闲 ${PLAIN}"
 
-if wait_with_countdown 5 "确认 xhttp 端口 [${DEF_X}]"; then
+if wait_with_countdown 10 "确认 xhttp 端口 [${DEF_X}]"; then
     PORT_XHTTP=$DEF_X
 else
     read -p "   ✏️  请输入 xhttp 端口: " U_X
