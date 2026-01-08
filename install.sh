@@ -16,11 +16,6 @@ if [ ! -f /etc/debian_version ]; then
     exit 1
 fi
 
-if [[ $EUID -ne 0 ]]; then
-    echo "${RED}❌ 错误：请使用 root 权限运行此脚本。${PLAIN}"
-    exit 1
-fi
-
 # --- 核心工具：动态倒计时 ---
 # 返回: 0=使用默认(超时或按回车), 1=手动修改(按其他键)
 wait_with_countdown() {
