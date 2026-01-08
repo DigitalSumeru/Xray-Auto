@@ -339,18 +339,20 @@ echo -e "\${GREEN}Xray 配置信息 (Xray Configuration)\${PLAIN}"
 echo "=========================================================="
 echo -e "\${YELLOW}代理配置:\${PLAIN}"
 echo "----------------------------------------------------------"
-# --- 修复对齐 (Fixed Alignment) ---
-# 地址 (IP) 增加了空格以匹配下方 (Visual width adjusted)
-echo -e "  地址 (IP)        : \${BLUE}\${IPV4}\${PLAIN}"
-echo -e "  优选 SNI         : \${YELLOW}\${SNI_HOST}\${PLAIN}"
-echo -e "  UUID             : \${BLUE}\${UUID}\${PLAIN}"
-echo -e "  Public Key       : \${BLUE}\${PUBLIC_KEY}\${PLAIN}"
+# --- 强制对齐修正 (Alignment Fix) ---
+echo -e "  地址 (IP)         : \${BLUE}\${IPV4}\${PLAIN}"
+# 优选 SNI  : 8个空格
+echo -e "  优选 SNI        : \${YELLOW}\${SNI_HOST}\${PLAIN}"
+# UUID      : 12个空格 (基准)
+echo -e "  UUID            : \${BLUE}\${UUID}\${PLAIN}"
+# Public Key: 6个空格
+echo -e "  Public Key      : \${BLUE}\${PUBLIC_KEY}\${PLAIN}"
 echo "----------------------------------------------------------"
-# 使用 printf 强行对齐
-printf "  节点 1 %-10s : 端口: \${BLUE}%-6s\${PLAIN} 协议: \${BLUE}TCP/Reality\${PLAIN}\n" "(Vision)" "\${PORT_VISION}"
-printf "  节点 2 %-10s : 端口: \${BLUE}%-6s\${PLAIN} 协议: \${BLUE}xhttp/Reality\${PLAIN} 路径: \${BLUE}\${XHTTP_PATH}\${PLAIN}\n" "(xhttp)" "\${PORT_XHTTP}"
+# 使用 %-9s (而不是10s) 以匹配上方 UUID 的对齐位置
+printf "  节点 1 %-9s : 端口: \${BLUE}%-6s\${PLAIN} 协议: \${BLUE}TCP/Reality\${PLAIN}\n" "(Vision)" "\${PORT_VISION}"
+printf "  节点 2 %-9s : 端口: \${BLUE}%-6s\${PLAIN} 协议: \${BLUE}xhttp/Reality\${PLAIN} 路径: \${BLUE}\${XHTTP_PATH}\${PLAIN}\n" "(xhttp)" "\${PORT_XHTTP}"
 echo "----------------------------------------------------------"
-echo -e "  管理端口 (SSH)   : \${BLUE}\${SSH_PORT}\${PLAIN}"
+echo -e "  管理端口 (SSH)  : \${BLUE}\${SSH_PORT}\${PLAIN}"
 echo "----------------------------------------------------------"
 echo -e "\${YELLOW}👇 节点1 链接 (Vision):\${PLAIN}"
 echo -e "\${GREEN}\${LINK_VISION}\${PLAIN}"
