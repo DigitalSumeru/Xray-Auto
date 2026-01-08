@@ -337,7 +337,7 @@ LINK_XHTTP="vless://\${UUID}@\${IPV4}:\${PORT_XHTTP}?security=reality&encryption
 clear
 echo -e "\${GREEN}Xray 配置信息 (Xray Configuration)\${PLAIN}"
 echo "=========================================================="
-echo -e "\${YELLOW}服务器详细配置:\${PLAIN}"
+echo -e "\${YELLOW}代理配置:\${PLAIN}"
 echo "----------------------------------------------------------"
 echo -e "  地址 (IP)       : \${BLUE}\${IPV4}\${PLAIN}"
 echo -e "  优选 SNI        : \${YELLOW}\${SNI_HOST}\${PLAIN}"
