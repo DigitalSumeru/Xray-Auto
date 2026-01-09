@@ -6,13 +6,11 @@
 # Version: 0.4
 # ==============================================================
 
-# --- 1. 全局配置与 UI 定义 ---
 RED="\033[31m"; GREEN="\033[32m"; YELLOW="\033[33m"; BLUE="\033[36m"; PURPLE="\033[35m"; PLAIN="\033[0m"
 BOLD="\033[1m"
 BG_RED="\033[41;37m"; BG_GREEN="\033[42;37m"
 ICON_OK="✅"; ICON_ERR="❌"; ICON_WARN="⚠️"; ICON_WAIT="⏳"
 
-# 动画函数
 run_with_spinner() {
     local pid=$1
     local delay=0.1
@@ -43,9 +41,52 @@ print_banner() {
     echo -e "${BLUE}============================================================${PLAIN}\n"
 }
 
-# --- 2. 基础检查与网络侦测 ---
 if [[ $EUID -ne 0 ]]; then echo -e "${RED}${ICON_ERR} Error: 请使用 root 权限运行!${PLAIN}"; exit 1; fi
 if [ ! -f /etc/debian_version ]; then echo -e "${RED}${ICON_ERR} 仅支持 Debian/Ubuntu 系统!${PLAIN}"; exit 1; fi
+
+pre_flight_check() {
+    if ! pgrep -x apt >/dev/null && ! pgrep -x dpkg >/dev/null && dpkg --audit >/dev/null 2>&1; then
+        return 0
+    fi
+
+    echo -e "正在检查环境..."
+
+    local timeout=120
+    local max_ticks=$((timeout * 2)) 
+    local ticks=0
+    
+    local spin='-\|/'
+    local i=0
+
+    while pgrep -x apt >/dev/null || pgrep -x dpkg >/dev/null; do
+        if [ $ticks -ge $max_ticks ]; then
+            printf "\r\033[K" 
+            echo -e "${RED}${ICON_ERR} 等待超时！apt/dpkg 占用时间过长。${PLAIN}"
+            exit 1
+        fi
+
+        local sec=$((ticks / 2))
+        
+        i=$(( (i+1) % 4 ))
+        printf "\r${YELLOW}[%s] 系统正忙，请稍候... (%ds/${timeout}s)${PLAIN}" "${spin:$i:1}" "$sec"
+        
+        sleep 0.5
+        ((ticks++))
+    done
+
+    printf "\r\033[K"
+
+    if ! dpkg --audit >/dev/null 2>&1; then
+        echo -e "${YELLOW}尝试修复被中断的安装...${PLAIN}"
+
+        dpkg --configure -a >/dev/null 2>&1
+        if ! dpkg --audit >/dev/null 2>&1; then
+             echo -e "${RED}修复失败，请手动检查。${PLAIN}"
+             exit 1
+        fi
+        echo -e "${GREEN}修复完成。${PLAIN}"
+    fi
+}
 
 check_net_stack() {
     HAS_V4=false; HAS_V6=false; CURL_OPT=""
@@ -87,7 +128,6 @@ echo -ne "\r${GREEN}👉 ${message} ${PLAIN}[Enter 快进 / 其他键修改] (�
     return 0
 }
 
-# --- 3. 配置阶段 ---
 print_banner
 pre_flight_check
 check_net_stack
@@ -109,11 +149,9 @@ if wait_with_countdown 9 "确认 xhttp 端口 [${DEF_X}]"; then PORT_XHTTP=$DEF_
 clear
 echo -e "${YELLOW}${BOLD}🚀 开始全自动化部署...${PLAIN}"
 
-# --- 1. 系统初始化 ---
 timedatectl set-timezone Asia/Shanghai
 export DEBIAN_FRONTEND=noninteractive
 
-# 强制抑制 "Service Restart" 粉色弹窗
 if [ -f /etc/needrestart/needrestart.conf ]; then
     sed -i "s/#\$nrconf{restart} = 'i';/\$nrconf{restart} = 'a';/" /etc/needrestart/needrestart.conf
 fi
@@ -130,27 +168,49 @@ echo -ne "${BLUE}📦 更新系统并安装依赖 ${PLAIN}(此过程可能需要
     apt-get install -y $DEPENDENCIES >/dev/null 2>&1
 ) &
 
-# 运行动画，直到上面的任务结束
 run_with_spinner $!
 echo -e "${GREEN} 完成${PLAIN}"
 
-# 二次检查
 if ! command -v fail2ban-client &> /dev/null; then
 echo -e "\n${RED}❌ 严重错误：软件安装失败。可能是网络源问题，请重试。${PLAIN}"
     exit 1
 fi
 
-# 安装 Xray
-echo -e "${BLUE}   🚀 下载并安装 Xray Core...${PLAIN}"
-bash -c "$(curl -L $CURL_OPT https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
+echo -ne "${BLUE}   🚀 下载并安装 Xray Core...${PLAIN}"
 
-echo -e "${GREEN} Xray Core 安装完成${PLAIN}"
+install_xray_core() {
+    bash -c "$(curl -L $CURL_OPT https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install >/dev/null 2>&1
+}
+
+(install_xray_core) &
+pid=$!
+run_with_spinner $pid
+wait $pid
+status=$?
+
+if [ $status -ne 0 ]; then
+    echo -e "\n${YELLOW}⚠️  安装被中断 (可能是 apt 被占用)，正在尝试自动修复...${PLAIN}"
+    
+    pre_flight_check
+    
+    echo -ne "${BLUE}   🔄 锁已释放，正在重试安装 Xray Core...${PLAIN}"
+    (install_xray_core) &
+    pid=$!
+    run_with_spinner $pid
+    wait $pid
+    
+    if [ $? -ne 0 ]; then
+        echo -e "\n${RED}❌ 严重错误：重试安装失败！请检查网络连接。${PLAIN}"
+        exit 1
+    fi
+fi
+
+echo -e "${GREEN} 完成${PLAIN}"
 
 mkdir -p /usr/local/share/xray/
 wget -q $CURL_OPT -O /usr/local/share/xray/geoip.dat https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat
 wget -q $CURL_OPT -O /usr/local/share/xray/geosite.dat https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat
 
-# --- 2. 防火墙 ---
 add_rule() {
     local port=$1; local v4=$2; local v6=$3
     if [ "$v4" = true ]; then
@@ -181,7 +241,6 @@ mode = aggressive
 EOF
 systemctl restart fail2ban >/dev/null 2>&1
 
-# 确保服务启动
 systemctl restart rsyslog || echo "Rsyslog restart skipped"
 systemctl enable fail2ban >/dev/null 2>&1
 systemctl restart fail2ban
@@ -197,7 +256,6 @@ if [ "$(free -m | grep Mem | awk '{print $2}')" -lt 2048 ] && [ "$(swapon --show
 fi
 echo -e "${GREEN} 完成 ${PLAIN}"
 
-# --- 3. 智能 SNI 优选 ---
 echo -e "\n${BLUE}--- 🔍 智能 SNI 伪装域优选 ---${PLAIN}"
 DOMAINS=("www.icloud.com" "www.apple.com" "itunes.apple.com" "learn.microsoft.com" "www.bing.com" "www.tesla.com")
 BEST_MS=9999; BEST_INDEX=0
@@ -221,20 +279,16 @@ if wait_with_countdown 9 "优选 SNI [${DEFAULT_SNI}]"; then SNI_HOST="$DEFAULT_
     read -p "   请输入自定义 SNI: " SNI_IN; SNI_HOST="${SNI_IN:-$DEFAULT_SNI}"; fi
 echo -e "   ✅ 已选: ${YELLOW}${SNI_HOST}${PLAIN}"
 
-# --- 生成配置 ---
 XRAY_BIN="/usr/local/bin/xray"
 UUID=$($XRAY_BIN uuid)
 KEYS=$($XRAY_BIN x25519)
 
-# 1. 提取密钥
 PRIVATE_KEY=$(echo "$KEYS" | grep "Private" | awk '{print $NF}')
 PUBLIC_KEY=$(echo "$KEYS" | grep -E "Public|Password" | awk '{print $NF}')
 
-# 2. 生成随机参数
 SHORT_ID=$(openssl rand -hex 8)
 XHTTP_PATH="/$(openssl rand -hex 4)"
 
-# 3. 验证变量是否生成成功
 if [[ -z "$UUID" || -z "$PRIVATE_KEY" || -z "$PUBLIC_KEY" ]]; then
     echo -e "\${RED}❌ 错误：凭证生成不完整，请检查 Xray 是否安装成功。${PLAIN}"
     exit 1
@@ -242,7 +296,6 @@ fi
 
 mkdir -p /usr/local/etc/xray/
 
-# --- 写入配置 ---
 cat > /usr/local/etc/xray/config.json <<EOF
 {
   "log": { "loglevel": "warning" },
@@ -270,20 +323,15 @@ mkdir -p /etc/systemd/system/xray.service.d
 echo -e "[Service]\nLimitNOFILE=infinity\nLimitNPROC=infinity\nTasksMax=infinity" > /etc/systemd/system/xray.service.d/override.conf
 systemctl daemon-reload >/dev/null
 
-# --- 5. 生成工具脚本 (Info & Mode) ---
 cp /usr/local/etc/xray/config.json /usr/local/etc/xray/config_block.json
 sed 's/, "geoip:cn"//g' /usr/local/etc/xray/config_block.json > /usr/local/etc/xray/config_allow.json
 
-# 1. 自动获取主机名
 HOST_NAME=$(hostname)
 
-# 2. Info 脚本
-# 写入静态变量头
 cat > /usr/local/bin/info <<EOF
 #!/bin/bash
 RED="\033[31m"; GREEN="\033[32m"; YELLOW="\033[33m"; BLUE="\033[36m"; PLAIN="\033[0m"
 
-# --- 核心配置 ---
 UUID="${UUID}"
 PORT_VISION="${PORT_VISION}"
 PORT_XHTTP="${PORT_XHTTP}"
@@ -295,24 +343,20 @@ PUBLIC_KEY="${PUBLIC_KEY}"
 HOST_NAME="${HOST_NAME}"
 EOF
 
-# 动态逻辑
 cat >> /usr/local/bin/info << 'SCRIPT_EOF'
 
-# --- 动态获取 IP ---
 IPV4=$(curl -s4m 2 https://api.ipify.org || curl -s4m 2 https://ifconfig.me)
 IPV6=$(curl -s6m 2 https://api64.ipify.org || curl -s6m 2 https://ifconfig.co)
 [ -z "$IPV4" ] && IPV4="N/A"
 [ -z "$IPV6" ] && IPV6="N/A"
 if [[ "$IPV4" != "无 IPv4 地址" ]]; then SHOW_IP=$IPV4; else SHOW_IP="[$IPV6]"; fi
 
-# --- 生成链接 ---
 # 节点1备注：主机名_Vision (代表 TCP Reality + Vision流控)
 LINK_VISION="vless://${UUID}@${SHOW_IP}:${PORT_VISION}?security=reality&encryption=none&pbk=${PUBLIC_KEY}&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=${SNI_HOST}&sid=${SHORT_ID}#${HOST_NAME}_Vision"
 
 # 节点2备注：主机名_xhttp (代表 xhttp协议)
 LINK_XHTTP="vless://${UUID}@${SHOW_IP}:${PORT_XHTTP}?security=reality&encryption=none&pbk=${PUBLIC_KEY}&headerType=none&fp=chrome&type=xhttp&path=${XHTTP_PATH}&sni=${SNI_HOST}&sid=${SHORT_ID}#${HOST_NAME}_xhttp"
 
-# --- 输出显示 ---
 clear
 echo -e "=========================================================="
 echo -e "${BLUE}🚀 Xray 配置详情 ${PLAIN}"
@@ -347,7 +391,6 @@ echo ""
 SCRIPT_EOF
 chmod +x /usr/local/bin/info
 
-# Mode 脚本
 cat > /usr/local/bin/mode << 'MODE_EOF'
 #!/bin/bash
 GREEN='\033[32m'; RED='\033[31m'; YELLOW='\033[33m'; BLUE='\033[36m'; PLAIN='\033[0m'
