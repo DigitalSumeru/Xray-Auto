@@ -7,8 +7,7 @@
 # ==============================================================
 
 RED="\033[31m"; GREEN="\033[32m"; YELLOW="\033[33m"; BLUE="\033[36m"; PURPLE="\033[35m"; PLAIN="\033[0m"
-BOLD="\033[1m"
-BG_RED="\033[41;37m"; BG_GREEN="\033[42;37m"
+BOLD="\033[1m"; BG_RED="\033[41;37m"; BG_GREEN="\033[42;37m"
 ICON_OK="✅"; ICON_ERR="❌"; ICON_WARN="⚠️"; ICON_WAIT="⏳"
 
 run_with_spinner() {
@@ -35,7 +34,7 @@ print_banner() {
     echo -e "${BLUE}           |       ||   |_||_ |       ||       |            ${PLAIN}"
     echo -e "${BLUE}           |     | |    __  ||       ||_     _|             ${PLAIN}"
     echo -e "${BLUE}           |   _   ||   |  | ||   _   |  |   |              ${PLAIN}"
-    echo -e "${BLUE}           |__| |__||___|  |_||__| |__|  |___|              ${PLAIN}"
+    echo -e "${BLUE}           |__| |__||___|  |_||__| |__|  |___|  By ISFZY    ${PLAIN}"
     echo -e "${BLUE}============================================================${PLAIN}"
     echo -e "${YELLOW}${BOLD}                      Xray-Auto v0.4               ${PLAIN}"
     echo -e "${BLUE}============================================================${PLAIN}\n"
@@ -159,11 +158,9 @@ fi
 echo -ne "${BLUE}📦 更新系统并安装依赖 ${PLAIN}(此过程可能需要几分钟)..."
 
 (
-    # apt 更新命令 (静默执行)
     apt-get update -qq >/dev/null 2>&1
     apt-get -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade >/dev/null 2>&1
     
-    # 安装核心依赖 (静默执行)
     DEPENDENCIES="curl wget sudo nano git htop tar unzip socat fail2ban rsyslog chrony iptables qrencode"
     apt-get install -y $DEPENDENCIES >/dev/null 2>&1
 ) &
@@ -256,18 +253,14 @@ if [ "$(free -m | grep Mem | awk '{print $2}')" -lt 2048 ] && [ "$(swapon --show
 fi
 echo -e "${GREEN} 完成 ${PLAIN}"
 
-# --- 3. 智能 SNI 优选 ---
 echo -e "\n${BLUE}--- 🔍 智能 SNI 伪装域优选 ---${PLAIN}"
 DOMAINS=("www.icloud.com" "www.apple.com" "itunes.apple.com" "learn.microsoft.com" "www.bing.com" "www.tesla.com")
 BEST_MS=9999; BEST_INDEX=1
 
-# 1. 输出表头
 printf "${BG_GREEN} %-4s %-25s %-12s ${PLAIN}\n" "ID" "Domain" "Latency"
 
-# 2. 循环测试延迟
 for i in "${!DOMAINS[@]}"; do
     domain="${DOMAINS[$i]}"
-    # 显示序号 (从1开始)
     display_index=$((i+1))
     
     time_cost=$(LC_NUMERIC=C curl $CURL_OPT -w "%{time_connect}" -o /dev/null -s --connect-timeout 2 "https://$domain")
@@ -275,7 +268,7 @@ for i in "${!DOMAINS[@]}"; do
         ms=$(LC_NUMERIC=C awk -v t="$time_cost" 'BEGIN { printf "%.0f", t * 1000 }')
         color=$GREEN
         if [ "$ms" -gt 200 ]; then color=$YELLOW; fi
-        # 记录最佳
+
         if [ "$ms" -lt "$BEST_MS" ]; then BEST_MS=$ms; BEST_INDEX=$display_index; fi
         printf " %-4s %-25s ${color}%-8s${PLAIN}\n" "$display_index" "$domain" "${ms}ms"
     else
@@ -283,30 +276,22 @@ for i in "${!DOMAINS[@]}"; do
     fi
 done
 
-# 3. 显示选项 0 (自定义)
 printf " %-4s %-25s ${BLUE}%-8s${PLAIN}\n" "0" "自定义输入 (Custom)" "-"
 echo -e "----------------------------------------------"
 
-# 获取最佳域名
 DEFAULT_SNI=${DOMAINS[$((BEST_INDEX-1))]}
 
-# 4. 交互选择
-# 逻辑：10秒倒计时，不输入则使用默认；输入数字则选中对应项
 echo -ne "${GREEN}👉 请选择 SNI ID [0-6] ${PLAIN}(默认: ${YELLOW}${BEST_INDEX}. ${DEFAULT_SNI}${PLAIN}): "
 read -t 10 -p "" SELECTION || SELECTION=""
 echo "" # 换行
 
-# 5. 处理选择结果
 if [[ -z "$SELECTION" ]]; then
-    # 情况A: 超时或直接回车 -> 使用最佳推荐
     SNI_HOST="$DEFAULT_SNI"
     echo -e "⏩ 使用推荐配置: ${GREEN}${SNI_HOST}${PLAIN}"
 
 elif [[ "$SELECTION" == "0" ]]; then
-    # 情况B: 用户选了 0 -> 进入自定义模式 (带校验)
     while true; do
         read -p "⌨️  请输入自定义 SNI 域名: " CUSTOM_INPUT
-        # 校验逻辑: 必须包含点(.), 只能包含字母数字横杠
         if [[ "$CUSTOM_INPUT" =~ ^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$ ]]; then
             SNI_HOST="$CUSTOM_INPUT"
             break
@@ -316,12 +301,10 @@ elif [[ "$SELECTION" == "0" ]]; then
     done
 
 elif [[ "$SELECTION" =~ ^[1-6]$ ]]; then
-    # 情况C: 用户输入 1-6 -> 从列表中映射
     SNI_HOST=${DOMAINS[$((SELECTION-1))]}
     echo -e "👉 您选择了: ${GREEN}${SNI_HOST}${PLAIN}"
 
 else
-    # 情况D: 乱输 -> 强制使用默认
     SNI_HOST="$DEFAULT_SNI"
     echo -e "${YELLOW}⚠️  输入无效，自动使用推荐: ${GREEN}${SNI_HOST}${PLAIN}"
 fi
@@ -398,12 +381,10 @@ IPV4=$(curl -s4m 2 https://api.ipify.org || curl -s4m 2 https://ifconfig.me)
 IPV6=$(curl -s6m 2 https://api64.ipify.org || curl -s6m 2 https://ifconfig.co)
 [ -z "$IPV4" ] && IPV4="N/A"
 [ -z "$IPV6" ] && IPV6="N/A"
-if [[ "$IPV4" != "无 IPv4 地址" ]]; then SHOW_IP=$IPV4; else SHOW_IP="[$IPV6]"; fi
+if [[ "$IPV4" != "N/A" ]]; then SHOW_IP=$IPV4; else SHOW_IP="[$IPV6]"; fi
 
-# 节点1备注：主机名_Vision (代表 TCP Reality + Vision流控)
 LINK_VISION="vless://${UUID}@${SHOW_IP}:${PORT_VISION}?security=reality&encryption=none&pbk=${PUBLIC_KEY}&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=${SNI_HOST}&sid=${SHORT_ID}#${HOST_NAME}_Vision"
 
-# 节点2备注：主机名_xhttp (代表 xhttp协议)
 LINK_XHTTP="vless://${UUID}@${SHOW_IP}:${PORT_XHTTP}?security=reality&encryption=none&pbk=${PUBLIC_KEY}&headerType=none&fp=chrome&type=xhttp&path=${XHTTP_PATH}&sni=${SNI_HOST}&sid=${SHORT_ID}#${HOST_NAME}_xhttp"
 
 clear
@@ -422,18 +403,18 @@ echo -e "----------------------------------------------------------"
 echo -e "  节点 1 (Vision)  端口: ${GREEN}${PORT_VISION}${PLAIN}    流控: ${GREEN}xtls-rprx-vision${PLAIN}"
 echo -e "  节点 2 (xhttp)   端口: ${GREEN}${PORT_XHTTP}${PLAIN}   协议: ${GREEN}xhttp${PLAIN}   路径: ${GREEN}${XHTTP_PATH}${PLAIN}"
 echo -e "----------------------------------------------------------"
-echo -e "${YELLOW}👇 节点 1 (Vision) 链接:${PLAIN}"
+echo -e "${BLUE}👇 节点 1 (Vision) 链接:${PLAIN}"
 echo -e "${LINK_VISION}"
 echo -e ""
-echo -e "${YELLOW}👇 节点 2 (xhttp) 链接:${PLAIN}"
+echo -e "${BLUE}👇 节点 2 (xhttp) 链接:${PLAIN}"
 echo -e "${LINK_XHTTP}"
 echo -e "=========================================================="
-echo -e "\n📱 手机扫码功能"
-read -p "   是否显示二维码? (y/n) [默认 n]: " CHOICE
+echo -e "\n${BLUE}📱 手机扫码功能${PLAIN}"
+read -p "${YELLOW}   是否显示二维码? (y/n) [默认 n]: ${PLAIN}" CHOICE
 if [[ "$CHOICE" == "y" || "$CHOICE" == "Y" ]]; then
-    echo -e "\n${YELLOW}>>> 正在生成 Vision 节点二维码...${PLAIN}"
+    echo -e "\n${BLUE}>>> 正在生成 Vision 节点二维码...${PLAIN}"
     qrencode -t ANSIUTF8 "${LINK_VISION}"
-    echo -e "\n${YELLOW}>>> 正在生成 xhttp 节点二维码...${PLAIN}"
+    echo -e "\n${BLUE}>>> 正在生成 xhttp 节点二维码...${PLAIN}"
     qrencode -t ANSIUTF8 "${LINK_XHTTP}"
 fi
 echo ""
