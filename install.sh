@@ -125,9 +125,8 @@ monitor_task_inline() {
         if [ -f "$logfile" ]; then
             local raw_log=$(tail -n 1 "$logfile" 2>/dev/null)
             # 1. 去除颜色代码
-            # 2. 去除 \r 回车符 (关键修复)
-            # 3. 截取前 UI_LOG_WIDTH 个字符 (您设置的100)
-            local clean_log=$(echo "$raw_log" | sed 's/\x1b\[[0-9;]*m//g' | tr -d '\r' | cut -c 1-$UI_LOG_WIDTH)
+            # 2. 去除 \r 回车符
+             local clean_log=$(echo "$raw_log" | sed 's/\x1b\[[0-9;]*m//g' | tr -d '\r' | cut -c 1-$UI_LOG_WIDTH)
         else
             local clean_log=""
         fi
