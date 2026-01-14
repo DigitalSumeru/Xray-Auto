@@ -824,7 +824,7 @@ fi
 
 # 底部常用命令提示
 echo -e "\n------------------------------------------------------------------"
-echo -e " 常用工具: ${YELLOW}info${PLAIN}  (回显) | ${YELLOW}net${PLAIN} (网络) | ${YELLOW}swap${PLAIN} (内存) | ${YELLOW}bt${PLAIN} (封禁)" ${YELLOW}f2b${PLAIN}  (防火墙)
+echo -e " 常用工具: ${YELLOW}info${PLAIN}  (回显) | ${YELLOW}net${PLAIN} (网络) | ${YELLOW}swap${PLAIN} (内存) | ${YELLOW}bt${PLAIN} (封禁) | ${YELLOW}f2b${PLAIN}  (防火墙)"
 echo -e " 运维命令: ${YELLOW}ports${PLAIN} (端口) | ${YELLOW}bbr${PLAIN} (内核) | ${YELLOW}bt${PLAIN}   (封禁) | ${YELLOW}journalctl -u xray -f${PLAIN} (日志)"
 echo -e "------------------------------------------------------------------"
 echo ""
