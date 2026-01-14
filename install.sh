@@ -76,26 +76,41 @@ log_err()  { echo -e "${ERR} $*" >&2; }
 
 # --- 核心：统一倒计时交互函数 ---
 # 用法: read_with_timeout "提示语" "默认值" "超时时间"
-# 结果存储在全局变量 $USER_INPUT 中
 read_with_timeout() {
     local prompt="$1"
     local default="$2"
     local timeout="$3"
     local input_char=""
     
-    # 清空之前的输入残留
+    # 1. 清空之前的输入残留 (关键修复：防止幽灵回车导致秒过)
+    while read -r -t 0; do read -r -n 1; done
+    
     USER_INPUT=""
+    
+    # 2. 设定截止时间戳 (锚定未来时刻)
+    local start_time=$(date +%s)
+    local end_time=$((start_time + timeout))
+    local current_time
+    local remaining
 
-    for ((t=timeout; t>0; t--)); do
-        # 交互 UI： 提示语 [默认: X] [ 10s ] :
-        echo -ne "\r${YELLOW}${prompt} [默认: ${default}] [ ${RED}${t}s${YELLOW} ] : ${PLAIN}"
+    while true; do
+        current_time=$(date +%s)
+        remaining=$((end_time - current_time))
         
-        # -n 1 读取一个字符，-t 1 等待一秒
+        # 如果时间到了，退出循环
+        if [ "$remaining" -le 0 ]; then
+            break
+        fi
+        
+        # 交互 UI： 提示语 [默认: X] [ 10s ] :
+        # 这里的 $remaining 是真实剩余秒数，不会忽快忽慢
+        echo -ne "\r${YELLOW}${prompt} [默认: ${default}] [ ${RED}${remaining}s${YELLOW} ] : ${PLAIN}"
+        
+        # -t 1 等待一秒，但我们只关心是否按键
         read -t 1 -n 1 input_char
         if [ $? -eq 0 ]; then
             # 用户按下了键
             echo "" # 换行
-            # 如果用户直接按回车(输入为空)，则使用默认值
             if [ -z "$input_char" ]; then
                 USER_INPUT="$default"
             else
