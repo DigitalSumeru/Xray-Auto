@@ -62,6 +62,7 @@ bash <(curl -sL https://github.com/ISFZY/Xray-Auto/raw/main/remove.sh)
 | `swap` | 修改虚拟内存（Swap) | Swap相关参数 |
 | `bbr` | 修改BBR | BBR相关参数 |
 | `bt` | 修改BT流量 | BT相关参数 |
+| `xw` | 调用WARP | WARP相关参数 |
 
 ### 📝 客户端配置参考
 | 参数 | 值 (示例) | 说明 |
